@@ -44,6 +44,7 @@ typedef struct PercentMMessage {
 #define L_FLAG 10
 #define B_FLAG 4
 #define C_FLAG 6
+#define DNE_FLAG 7
 
 // global 
 char clientHandle[HANDLE_MAX];

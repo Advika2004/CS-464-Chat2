@@ -32,4 +32,4 @@ int checkArgs(int argc, char *argv[]);
 void serverControl(int socketNumber);
 void processClient(int socketNumber);
 void addNewSocket(int socketNumber);
-void forwardMPDU(char* curHandle, char* destHandle, char* message);
+void forwardMPDU(char* curHandle, char* destHandle, char* message, uint8_t* OGBuffer, int OGbufferLen);

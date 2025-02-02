@@ -262,7 +262,7 @@ void clientControl(int serverSocket){
 	while(1){
 
 		if (printPromptFlag == 1) {
-			printf("Enter data: ");
+			printf("$: ");
 			fflush(stdout);
 			printPromptFlag = 0;
 		}
@@ -301,7 +301,7 @@ void processMsgFromServer(int serverSocket)
 		uint8_t flag = 0;
     	flag = buffer[0];  // First byte is the flag
 
-        if (flag == 7) {
+        if (flag == DNE_FLAG) { 
             // the client asked for DNE
             uint8_t handleLength = buffer[1];               
             char handleName[HANDLE_MAX];    
@@ -313,10 +313,66 @@ void processMsgFromServer(int serverSocket)
             printf("Client with handle %s does not exist.\n", handleName);
         }
 
-    	else {
-        	// Process other message types normally
-        	printf("\nMessage received on socket %d, length: %d Data: %s\n", serverSocket, serverStatus, buffer);
-    	}
+		else if (flag == M_FLAG){
+
+			printf("Buffer Contents (Hex): ");
+    for (int i = 0; i < serverStatus; i++) {
+        printf("%02X ", buffer[i]);
+    }
+    printf("\n");
+
+    // ✅ Directly print the buffer contents (ASCII)
+    printf("Buffer Contents (ASCII): ");
+    for (int i = 0; i < serverStatus; i++) {
+        if (buffer[i] >= 32 && buffer[i] <= 126) {
+            printf("%c", buffer[i]);  // Printable characters
+        } else {
+            printf(".");  // Non-printable characters as '.'
+        }
+    }
+    printf("\n");
+
+			//CAN REFACTOR THIS	
+			
+			int curBufSpot = 1;
+
+   			uint8_t handleLen = buffer[curBufSpot];
+    		char currHandle[handleLen + 1];  // +1 for null terminator
+
+			curBufSpot++;
+
+    		memcpy(currHandle, buffer + curBufSpot, handleLen);
+    		currHandle[handleLen] = '\0'; 
+    		curBufSpot += handleLen;
+
+			uint8_t numDest = buffer[curBufSpot];
+    		curBufSpot++;
+
+    		if (numDest != 1) {
+        		printf("Error: Only one destination allowed, given %d\n", numDest);
+        		return;
+    		}
+
+    		// get out the destination
+    		uint8_t destLen = buffer[curBufSpot];
+			curBufSpot++;
+
+    		char destHandle[destLen + 1];
+    		memcpy(destHandle, buffer + curBufSpot, destLen);
+    		destHandle[destLen] = '\0'; 
+    		curBufSpot += destLen;
+
+    		//get the rest of the message
+    		char *messageToPass = (char *)(buffer + curBufSpot); 
+
+    		//for testing
+    		printf("PARSED Sender Handle: %s\n", currHandle);
+    		printf("PARSED Destination Handle: %s\n", destHandle);
+    		printf("PARSED Message: %s\n", messageToPass);
+
+    		printf("\n%s: %s\n", currHandle, messageToPass);
+    		fflush(stdout);
+		}
 	}
 }
 

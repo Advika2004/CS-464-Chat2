@@ -11,7 +11,7 @@
 #include "pollLib.h"
 #include "server.h"
 #include "dict.h"
-
+#include "makePDU.h"
 
 int main(int argc, char *argv[])
 {
@@ -71,7 +71,7 @@ uint8_t validateHandle(Dict *table, char* handle, int clientSocket){
 	return INVALID_FLAG;
 }
 
-void forwardMPDU(char* curHandle, char* destHandle, char* message){
+void forwardMPDU(char* curHandle, char* destHandle, char* message, uint8_t* OGBuffer, int OGbufferLen){
 
 	//JUST DEBUGGING PRINTING
 	printf("FORWARDING MESSAGE...\n");
@@ -88,7 +88,7 @@ void forwardMPDU(char* curHandle, char* destHandle, char* message){
         }
     }
 
-	int messageLength = strlen(message) + 1; //strlen does not include the null terminator
+	//int messageLength = strlen(message) + 1; //strlen does not include the null terminator
 	int destSocketNum = searchByKey(table, destHandle);
 	int sent = 0;
 	printf("Destination Socket Number (after searchByKey): %d\n", destSocketNum);
@@ -97,8 +97,8 @@ void forwardMPDU(char* curHandle, char* destHandle, char* message){
     if (destSocketNum != -1){
     	printf("Destination found. Sending message to socket: %d\n", destSocketNum);
 
-		int sent = sendPDU(destSocketNum, (uint8_t *)message, messageLength);
-    
+		int sent = sendPDU(destSocketNum, (uint8_t *)OGBuffer, OGbufferLen);
+
         if (sent < 0){
               perror("forwarding %M message failed\n");
               exit(-1);
@@ -107,6 +107,7 @@ void forwardMPDU(char* curHandle, char* destHandle, char* message){
 		printf("Message successfully sent! Bytes sent: %d\n", sent);
         return;
 	}
+
 	else{
         //want to send back the error flag and the error message to the client
         printf("Destination handle '%s' not found in table. Sending error response back to sender.\n", destHandle);
@@ -214,7 +215,7 @@ void parsePDU(int clientSocket, uint8_t *buffer, int messageLen){
     	printf("PARSED Message: %s\n", messageToPass);
 
     	//pass message to the forwarder
-    	forwardMPDU(currHandle, destHandle, messageToPass);
+    	forwardMPDU(currHandle, destHandle, messageToPass, buffer, messageLen);
 	}
 
 	if(messageTypeFlag == B_FLAG){
