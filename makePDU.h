@@ -5,3 +5,5 @@
 
 
 uint8_t* makeIntroPDU();
+int makeMPDU(char **chunks, uint8_t *buffer);
+void printPDU(uint8_t *pdu, int length);

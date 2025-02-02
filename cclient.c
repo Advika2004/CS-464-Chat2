@@ -34,25 +34,120 @@ int main(int argc, char * argv[])
 	return 0;
 }
 
+// gets the buffer from readfromstdin, parses it properly, stores stuff into array of pointers
+char** parseLine(uint8_t *buffer){
+
+	static char* chunks[MAX_CHUNKS];
+	int i = 0;
+    char *firstChunk = strtok((char*)buffer, " ");
+	chunks[i] = firstChunk;
+	i++;
+
+	if (strcmp(firstChunk, "%M") == 0) { 
+       char *handle = strtok(NULL, " "); 
+	   chunks[i] = handle;  
+	   i++;
+       char *message = strtok(NULL, "\n"); 
+	   chunks[i] = message;
+	   i++;
+    }
+
+	if (strcmp(firstChunk, "%C") == 0) { 
+       char *number = strtok(NULL, " ");
+
+	   int numHandles = atoi(number);
+
+	   if (numHandles < 2 || numHandles > 9){
+		printf("Too many or too little clients specified, please re-enter between 2-9 other clients\n");
+		return NULL;
+	   }
+
+	   int j = 0;
+	   for (j = 0; j < numHandles; j++){
+		char* curHandle = strtok(NULL, " ");
+		chunks[i] = curHandle;
+		i++;
+	   }
+
+       char *message = strtok(NULL, "\n"); 
+	   chunks[i] = message;
+	   i++;
+    }
+
+	if (strcmp(firstChunk, "%B") == 0) { 
+       char *message = strtok(NULL, "\n"); 
+	   chunks[i] = message;  
+	   i++;
+    }
+
+	if (strcmp(firstChunk, "%L") == 0) { 
+	   //fill this in later idk what this does yet 
+    }
+
+	chunks[i] = NULL;
+	return chunks;
+}
+
+//keep for error checking at the end
+void printChunks(char **chunks) {
+    int i = 0;
+    printf("Parsed Tokens:\n");
+    while (chunks[i] != NULL) {
+        printf("Token %d: %s\n", i, chunks[i]);
+        i++;
+    }
+    printf("End of tokens.\n");
+}
+
 void sendToServer(int socketNum)
 {
 	uint8_t sendBuf[MAXBUF];   //data buffer
 	int sendLen = 0;        //amount of data to send
 	int sent = 0;            //actual amount of data sent/* get the data and send it   */
 	
-	sendLen = readFromStdin(sendBuf);
-	printf("read: %s string len: %d (including null)\n", sendBuf, sendLen);
 	
-	sent = sendPDU(socketNum, sendBuf, sendLen);
+	sendLen = readFromStdin(sendBuf);
 
-	if (sent < 0)
-	{
-		perror("send call");
-		exit(-1);
+	//testing the parsing
+	char** chunkArray = parseLine(sendBuf);
+	printChunks(chunkArray);
+
+	if (chunkArray[0] == NULL) {
+    	printf("Invalid command.\n");
+    	return;
 	}
 
-	printf("Amount of data sent is: %d\n", sent);
+	else if(strcmp(chunkArray[0], "%M") == 0){
+
+		uint8_t MBuf[MAX_M_PDU_LEN];
+		int MLen = makeMPDU(chunkArray, MBuf);
+
+		int Msent = sendPDU(socketNum, MBuf, MLen);
+
+		if (Msent < 0)
+		{
+			perror("sendM call");
+			exit(-1);
+		}
+
+		printf("Sent %d bytes for %%M message.\n", Msent);
+	}
+
+	else{
+		printf("read: %s string len: %d (including null)\n", sendBuf, sendLen);
+	
+		sent = sendPDU(socketNum, sendBuf, sendLen);
+
+		if (sent < 0)
+		{
+			perror("send call");
+			exit(-1);
+		}
+
+		printf("Amount of data sent is: %d\n", sent);
+	}
 }
+
 
 void receiveHandleConf(int socketNum){
 	// just the one byte flag 
@@ -125,9 +220,23 @@ int readFromStdin(uint8_t * buffer)
 	}
 	
 	// Null terminate the string
-	buffer[inputLen] = '\0';
+	buffer[inputLen] = '\0'; 
 	inputLen++;
 	
+	// error checks for if the message given is larger than max amount
+	//if that goes over, print error message, ignore all input until \n, ignore command, don't send anything
+	if (inputLen - 1 > MAX_MESSAGE_LENGTH){
+		printf("Error: Input length exceeds maximum input message length %d\n", MAX_MESSAGE_LENGTH);
+
+		// go back through the entire thing and clear it
+		if (aChar != '\n') {
+        while ((aChar = getchar()) != '\n' && aChar != EOF) {
+            // Discard extra characters
+        	}
+   		}
+		return 0;
+	}
+
 	return inputLen;
 }
 
@@ -187,8 +296,27 @@ void processMsgFromServer(int serverSocket)
 	else if (serverStatus < 0) {
 		perror("recv call");
 	}
+
 	else {
-		printf("\nMessage received on socket %d, length: %d Data: %s\n", serverSocket, serverStatus, buffer);
+		uint8_t flag = 0;
+    	flag = buffer[0];  // First byte is the flag
+
+        if (flag == 7) {
+            // the client asked for DNE
+            uint8_t handleLength = buffer[1];               
+            char handleName[HANDLE_MAX];    
+
+			// go past the flag and the length (+2)                 
+            memcpy(handleName, buffer + 2, handleLength);    
+            handleName[handleLength] = '\0';   //null terminate that hoe              
+
+            printf("Client with handle %s does not exist.\n", handleName);
+        }
+
+    	else {
+        	// Process other message types normally
+        	printf("\nMessage received on socket %d, length: %d Data: %s\n", serverSocket, serverStatus, buffer);
+    	}
 	}
 }
 

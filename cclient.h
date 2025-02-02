@@ -24,6 +24,8 @@ void printChunks(char** array);
 char** parseLine(uint8_t *buffer);
 void sendHandle(int socketNum);
 void receiveHandleConf(int socketNum);
+void printChunks(char **chunks);
+char** parseLine(uint8_t *buffer);
 
 
 // structs
@@ -38,6 +40,10 @@ typedef struct PercentMMessage {
 #define DEBUG_FLAG 1
 #define MAX_CHUNKS 12
 #define HANDLE_MAX 100
+#define M_FLAG 5
+#define L_FLAG 10
+#define B_FLAG 4
+#define C_FLAG 6
 
 // global 
 char clientHandle[HANDLE_MAX];

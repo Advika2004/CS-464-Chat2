@@ -5,8 +5,13 @@
 * Use at your own risk.  
 *
 *****************************************************************************/
+#include "networks.h"
+#include "safeUtil.h"
+#include "communicate.h"
+#include "pollLib.h"
 #include "server.h"
 #include "dict.h"
+
 
 int main(int argc, char *argv[])
 {
@@ -52,31 +57,109 @@ uint8_t validateHandle(Dict *table, char* handle, int clientSocket){
 	if(uniqueOrNah == -1){
 		//key is not found, so it is unique, send back the flag
 		dctInsert(table, handle, clientSocket);
+
+		//checking if I can get values out of my table
+		int num = searchByKey(table, handle);
+		char* han = searchByValue(table, clientSocket);
+		printf("HERE: the socketnum just added: %d\n", num);
+		printf("HERE: the handle just added: %s\n", han);
+
+
 		printf("DEBUG - TABLE SIZE AFTER INSERTED: %d\n", table->size);
 		return VALID_FLAG;
 	}
 	return INVALID_FLAG;
 }
 
-		//TESTING:
-		// char* handle = dctGetKey(table, clientSocket);
-		// printf("handle name: %s\n", handle);
+void forwardMPDU(char* curHandle, char* destHandle, char* message){
 
-		// int socket = dctGetValue(table, handleName);
-		// printf("socket number: %d\n", socket);
+	//JUST DEBUGGING PRINTING
+	printf("FORWARDING MESSAGE...\n");
+    printf("Current Handle: %s\n", curHandle);
+    printf("Destination Handle: %s\n", destHandle);
+    printf("Message: %s\n", message);
 
-		// printf("DEBUG - TABLE SIZE AFTER INSERTED: %d\n", table->size);
+	int i = 0;
+    for (i = 0; i < table->cap; i++) {
+        Node *current = table->arr[i];
+        while (current != NULL) {
+            printf("TABLE ENTRY: Handle: %s, Socket: %d\n", current->key, current->value);
+            current = current->next;
+        }
+    }
+
+	int messageLength = strlen(message) + 1; //strlen does not include the null terminator
+	int destSocketNum = searchByKey(table, destHandle);
+	int sent = 0;
+	printf("Destination Socket Number (after searchByKey): %d\n", destSocketNum);
+
+	//it is within the table
+    if (destSocketNum != -1){
+    	printf("Destination found. Sending message to socket: %d\n", destSocketNum);
+
+		int sent = sendPDU(destSocketNum, (uint8_t *)message, messageLength);
+    
+        if (sent < 0){
+              perror("forwarding %M message failed\n");
+              exit(-1);
+          }
+
+		printf("Message successfully sent! Bytes sent: %d\n", sent);
+        return;
+	}
+	else{
+        //want to send back the error flag and the error message to the client
+        printf("Destination handle '%s' not found in table. Sending error response back to sender.\n", destHandle);
+
+		int flag = DNE_FLAG;
+        int destHandleLen = strlen(destHandle) + 1;
+        uint8_t errorBuffer[1 + destHandleLen];
+    
+        //will give me who to send it back to
+        int clientSocket = searchByKey(table, curHandle);
+        printf("SOcket to send it back to: %d\n", clientSocket);
+    
+        if (clientSocket == -1) {
+                printf("Error: Could not find socket for sender handle '%s'.\n", curHandle);
+                return; 
+        }
+    
+        memcpy(errorBuffer, &flag, 1); // 1 byte that holds the flag
+        memcpy(errorBuffer + 1, &destHandleLen, 1); //1 byte for how long the handle is
+        memcpy(errorBuffer + 2, destHandle, destHandleLen); //then the handle searched for 
+    
+        printf("FLAG BEING SENT BACK BECAUSE DESTINATION DOES NOT EXIST: %d\n", flag);
+            printf("Error Buffer Contents (Hex): ");
+            for (int i = 0; i < destHandleLen + 2; i++) {
+                printf("%02X ", errorBuffer[i]);
+            }
+            printf("\n");
+    
+        sent = sendPDU(clientSocket, errorBuffer, destHandleLen + 1);
+    
+        if (sent < 0){
+              perror("send failed\n");
+              exit(-1);
+          }
+    	printf("Error response successfully sent to sender. Bytes sent: %d\n", sent);
+    }
+}
 
 
 void parsePDU(int clientSocket, uint8_t *buffer, int messageLen){
 	//read the flag out
 	//first byte of the payload will be the flag, then length of handle, then handle
 	uint8_t messageTypeFlag = buffer[0];
-	char* handleName = (char*)buffer;
 	int sent = 0;
-	
+
 	//if its a intro message, then check if it exists in the table and send back the corresponding flag
 	if(messageTypeFlag == INTRO_FLAG){
+
+		uint8_t handleLen = buffer[1];     //get the handle length and add 1 for the null terminator
+    	char handleName[handleLen + 1];
+
+		memcpy(handleName, buffer + 2, handleLen); //just take out the handle
+    	handleName[handleLen] = '\0';
 
 		uint8_t flag;
 		flag = validateHandle(table, handleName, clientSocket);
@@ -89,12 +172,51 @@ void parsePDU(int clientSocket, uint8_t *buffer, int messageLen){
         	perror("send failed\n");
         	exit(-1);
     	}
-
 	}
 
-	if(messageTypeFlag == M_FLAG){
-		return;
+	//[flag][length handle][handle][number destinations][length of target][actual target][message]
+	if (messageTypeFlag == M_FLAG) {
+    	printf("MESSAGE PACKET RECEIVED\n");
+
+    	int curBufSpot = 1;
+
+   		uint8_t handleLen = buffer[curBufSpot];
+    	char currHandle[handleLen + 1];  // +1 for null terminator
+
+		curBufSpot++;
+
+    	memcpy(currHandle, buffer + curBufSpot, handleLen);
+    	currHandle[handleLen] = '\0'; 
+    	curBufSpot += handleLen;
+
+    	// check that dest number is 1 (should always be that for M)
+    	uint8_t numDest = buffer[curBufSpot];
+		curBufSpot++;
+    	if (numDest != 1) {
+        	printf("Error: Only one destination allowed, given %d\n", numDest);
+        	return;
+    	}
+
+    	// get out the destination
+    	uint8_t destLen = buffer[curBufSpot];
+		curBufSpot++;
+    	char destHandle[destLen + 1];
+    	memcpy(destHandle, buffer + curBufSpot, destLen);
+    	destHandle[destLen] = '\0'; 
+    	curBufSpot += destLen;
+
+    	//get the rest of the message
+    	char *messageToPass = (char *)(buffer + curBufSpot); 
+
+    	//for testing
+    	printf("PARSED Sender Handle: %s\n", currHandle);
+    	printf("PARSED Destination Handle: %s\n", destHandle);
+    	printf("PARSED Message: %s\n", messageToPass);
+
+    	//pass message to the forwarder
+    	forwardMPDU(currHandle, destHandle, messageToPass);
 	}
+
 	if(messageTypeFlag == B_FLAG){
 		return;
 	}
@@ -113,7 +235,7 @@ void recvFromClient(int clientSocket)
 	
 	//now get the data from the client_socket
 	messageLen = recvPDU(clientSocket, dataBuffer, MAXBUF);
-	//printf("what recvPDu is returning: %d\n", messageLen);
+	printf("what recvPDu is returning: %d\n", messageLen);
 	if (messageLen < 0) {
 		perror("recv call");
 	}

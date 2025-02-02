@@ -13,10 +13,6 @@
 #include <netdb.h>
 #include <stdint.h>
 
-#include "networks.h"
-#include "safeUtil.h"
-#include "communicate.h"
-#include "pollLib.h"
 
 #define MAXBUF 1024
 #define DEBUG_FLAG 1
@@ -29,9 +25,11 @@
 #define C_FLAG 6
 #define VALID_FLAG 2
 #define INVALID_FLAG 3
+#define DNE_FLAG 7
 
 void recvFromClient(int clientSocket);
 int checkArgs(int argc, char *argv[]);
 void serverControl(int socketNumber);
 void processClient(int socketNumber);
 void addNewSocket(int socketNumber);
+void forwardMPDU(char* curHandle, char* destHandle, char* message);
