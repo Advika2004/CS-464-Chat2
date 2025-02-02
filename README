@@ -1,0 +1,195 @@
+Name: Advika Deodhar
+Lab Section: 6-9pm
+
+-------------------------------------------------------------------------------------------------------------------------------------
+My notes for the program:
+
+What the program is doing overall:
+- writing a server that can connect to many different clients
+  - the clients will send the server a message
+  - the server will go to the handle table
+    - the handle table maps the handle name to the socket number
+  - every client has a name and that is called it's "handle"
+  - the handle is taken in through the command line
+  - handle table must be able to grow in size 
+    - (maybe have it be a linked list, and keep adding nodes as you get new things?)
+    - (each node has 2 fields, socket number and handle name)
+    - (do a flat array and realloc)
+
+GOAL:
+- client sends the server the handle
+- server looks at the handle and checks the handle table
+- if that exists in the handle table already (someone already took that name) return a "not available" message
+- if that handle is unique, send back a "handle accepted" message or something like that
+- assume that the user input will be perfect, do not spend too much time doing error checking for stdin input
+
+
+CLIENT:
+- client is going to call connect, then the server will accept
+- this will establish the TCP connection (TCP = CONNECTION ORIENTED)
+- also POLL()
+  - look at the socket to the server and be able to process messages from STDIN and the server
+- client will take in the server's IP address, port number, and handle name as an input (handle is max 100 char)
+- %M = command that will send a message
+- %C = command that will multicast a message
+- %B = command that will broadcase a message
+- %L = get a list of all the handles from the server
+- client uses the $ as a prompt instead of "enter data"
+
+client plan:
+- take in stdin
+- use strtok to split up message by white space
+- if first thing is %M, call create MPDU
+- then pass that into sendPDU? 
+(do the same for the rest of the %? how should I split it up? based on the strtok?)
+- we know how long the handle can be and how long the message can be so make a struct of that
+- if we see a client that gives the %M, we know to store the following data into a struct. 
+- then using the data within that struct, we can create the PDU. 
+
+SERVER:
+- has to accept connecting clients
+- has to process incomming messages 
+- POLL() that to process one or the other
+- should be able to send messages between 3 clients
+
+
+HANLDE TALBE:
+- make struct to hold the socket descriptor and the handle
+- do this in the server
+- when the server calls accept, the accept() returns a socket fd
+- save that socket fd into the struct
+- when receiving the message, save the message into the struct
+- be able to look up a handle
+  - should be able to look up by a handle name and get a socket number
+  - should be able to look up by a socket number and get a handle name 
+- add a handle
+- remove a handle 
+- DEBUG THIS FIRST AND GET IT WORKING 100%
+- found my old 357 dictionary implementation and modified it to work for this project. 
+
+%M:
+- should work for lowercase m as well
+- takes in the handle name and the message to be sent
+- client has to parse through stdin 
+- make a struct to store the different stuff? or is it easier to just strtok? 
+- Ex: "%M handle1 Hello how are you"
+- sends the message to the user with that handle name
+- if there is no text provided, then send an empty message
+- on the receiving end, that is processed like a \n
+- max length of the message is 200 bytes including the \n
+- messages end when user hits return
+- if the message is too long:
+    - break the message up of 199 byte packets (so that = 200 bytes after \n)
+    - ". You will send a new message packet (new normal header and the rest of the
+      header information) for each packet" - not sure what that means yet
+    - receiving end will process these messages individually
+    - to output the message, put each new message on an new line with new line at the end
+    - Ex: "handler1: Hello how are you"
+    - afrer printing out output, make sure the $ goes back out
+    - if the handle does not exist, then say perror "Client with handle <handle name> doesn't exist"
+    - 
+
+Next Steps:
+every time the server calls accept() it returns a file descriptor that becomes the value
+the handle that I send into my client becomes my key
+in the server's main, first create the table, then after it calls accept, it will call dctinsert() and add that to the table
+(check that the table has a value (print out the size))
+is that right? then the next step after that would be to start the %M prompt, and parse through the client stdin input 
+so that I know what the "handle" is that the client is goign to send in. does that sound like the right next path?
+
+How to Continue:
+- make a character array to store everything that I am reading from stdin
+- since the max message can only be 1400 characters, make it that size
+- have a struct of pointers for each B, M, C, L
+- if that goes over, print error message, ignore all input until \n, ignore command, don't send anything
+- store the number of tokens
+  - if there is 2 = M
+  - 1 = B
+  - C??? (figure out later)
+  - 0 = L or E
+- 
+
+Parsing:
+- call strtok once to get the %
+- if its %M, then call strtok again with white space to get handle
+    - call strtok again with \n to get until end of message
+    - put chunks in array
+- if %C, call strtok with white space to get number of handles
+    - for loop of that many handles
+    - if more or less than number of handles specified then print out some error and exit
+    - keep calling strtok with white space
+    - then call strtok with \n to get the end of the message
+- if %B, call strtok with \n
+- if %L, dont call strtok
+- return the array
+
+createPDU()
+- test that by printing out the buffer made
+- change send to server to send that buffer
+- print it out on the server to make sure its right
+
+
+FIX:
+- need to make the introduction PDU
+- need to parse through the stdin upon first command and store in chunks by strtok? 
+- how is the main doing this? the ip address and stuff? 
+- then make the intro PDU and send that to server
+- make sure server is getting that
+- parse through the pdu and get out the handle name
+- add the handle to the table when it gets that 
+- print out the table to check if it has been added properly
+
+      M:
+      - 2 bytes length added by sendPDU
+
+      - 1 byte flag for the type of message
+      - 1 byte length of handle
+      - actual handle name (size of the max handle length 100 char)
+      - 1 byte for number of destination handles (always 1)
+      - 1 byte length of destination handle  
+      - the actual destination handle (100 char)
+      - the actual message (as large as the max message length) (1400 char?) (do i have to do any subtraction for this?)
+        (the command line total can be 1400 char, but that is including the handles and the %M so how do I allocate a max for the message)
+        (or does it not matter since I will error check the length of the message elsehwere so I can just make this an arbitrary size of 1400?)
+      - total buffer length = 1 + 1 + 100 + 1 + 1 + 100 + 1400? = 1604 byte buffer ? 
+
+
+parsePDU()
+- go through received data on the server side and make sure i get the right stuff
+
+** implement into the handle table affter parsing on server side
+print out the handle table to make sure that everything is right
+test adding, removing, and searching for values!
+
+
+
+
+
+
+
+
+
+
+OK DID IT ALL WRONG RESTARTING:
+- client calls TCPconnect and connects with the server based on serverIP 
+- client then has to send a packet with the handle name to the server
+- make that packet with the 1 byte for the length of the handle + handle
+- the client will send that using sendPDU
+- the server recieves that packet, parses through it, and grabs out the handle
+- the server adds that handle to the handle table
+(what does the server return after the client does tcp connect?)(what needs to be added into the server packet)
+- receive the packet from the server
+- parse through the packet from the server
+- read for if the flag field sent back from the server will be a 2 or 3.
+- if it is then continue to read stdin for the next stuff?
+
+- server looks at the handle and checks the handle table
+- if that exists in the handle table already (someone already took that name) return a "not available" message
+- if that handle is unique, send back a "handle accepted" message or something like that
+
+
+- If the flag is 1
+- going to validate the handle
+    - go through and check if the handle exists in the table
+    - if it does, construct that pdu, send it back
+    - if it doesnt, contruct that pdu, send it back
