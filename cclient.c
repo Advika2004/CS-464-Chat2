@@ -77,7 +77,7 @@ char** parseLine(uint8_t *buffer){
 	   i++;
     }
 
-	if (strcasecmp(firstChunk, "%C") == 0) { 
+	else if (strcasecmp(firstChunk, "%C") == 0) { 
        char *number = strtok(NULL, " ");
 
 		if (number == NULL) {
@@ -124,20 +124,19 @@ char** parseLine(uint8_t *buffer){
 	   i++;
     }
 
-	if (strcasecmp(firstChunk, "%B") == 0) { 
+	else if (strcasecmp(firstChunk, "%B") == 0) { 
        char *message = strtok(NULL, "\n"); 
 
-	//check for if the message is empty
+	   //check for if the message is empty
 		if (message == NULL) {
         	message = "";
     	}
-
 
 	   chunks[i] = message;  
 	   i++;
     }
 
-	if (strcasecmp(firstChunk, "%L") == 0) { 
+	else if (strcasecmp(firstChunk, "%L") == 0) { 
 		//first chunk already in the chunks array so do nothing.
 	   return chunks;
     }
@@ -149,8 +148,6 @@ char** parseLine(uint8_t *buffer){
         return NULL;
     }
 
-	chunks[i] = NULL;
-	//printChunks(chunks);
 	return chunks;
 }
 
