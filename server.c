@@ -71,6 +71,21 @@ uint8_t validateHandle(Dict *table, char* handle, int clientSocket){
 	return INVALID_FLAG;
 }
 
+void forwardCPDU(char* curHandle, char destHandles[][HANDLE_MAX], int numDest, char* message, uint8_t* OGBuffer, int OGbufferLen) {
+    printf("FORWARDING MULTICAST MESSAGE...\n");
+    printf("Current Handle: %s\n", curHandle);
+    printf("Message: %s\n", message);
+    printf("Number of Recipients: %d\n", numDest);
+
+    for (int i = 0; i < numDest; i++) {
+
+        printf("Sending to: %s\n", destHandles[i]);
+
+        // Call forwardMPDU for each recipient
+        forwardMPDU(curHandle, destHandles[i], message, OGBuffer, OGbufferLen);
+    }
+}
+
 void forwardMPDU(char* curHandle, char* destHandle, char* message, uint8_t* OGBuffer, int OGbufferLen){
 
 	//JUST DEBUGGING PRINTING
@@ -79,8 +94,7 @@ void forwardMPDU(char* curHandle, char* destHandle, char* message, uint8_t* OGBu
     printf("Destination Handle: %s\n", destHandle);
     printf("Message: %s\n", message);
 
-	int i = 0;
-    for (i = 0; i < table->cap; i++) {
+    for (int i = 0; i < table->cap; i++) {
         Node *current = table->arr[i];
         while (current != NULL) {
             printf("TABLE ENTRY: Handle: %s, Socket: %d\n", current->key, current->value);
@@ -221,9 +235,60 @@ void parsePDU(int clientSocket, uint8_t *buffer, int messageLen){
 	if(messageTypeFlag == B_FLAG){
 		return;
 	}
+
 	if(messageTypeFlag == C_FLAG){
+		printf("MULTICAST PACKET RECEIVED\n");
+
+		int curBufSpot = 1;
+
+   		uint8_t handleLen = buffer[curBufSpot];
+    	char currHandle[handleLen + 1];  // +1 for null terminator
+
+		curBufSpot++;
+
+    	memcpy(currHandle, buffer + curBufSpot, handleLen);
+    	currHandle[handleLen] = '\0'; 
+    	curBufSpot += handleLen;
+
+    	// should be the number of handles given 
+    	uint8_t numDest = buffer[curBufSpot];
+		curBufSpot++;
+
+		//NEW STUFF FOR %C!!
+		//hold the handle names
+		char destHandles[numDest][HANDLE_MAX];
+    	int destSockets[numDest];
+
+		//go through the rest of the buffer, get out each handle, and store it into the array.
+		for (int i = 0; i < numDest; i++) {
+			uint8_t destLen = buffer[curBufSpot];
+			curBufSpot++;
+
+			//get the handle out and add that to the array
+    		memcpy(destHandles[i], buffer + curBufSpot, destLen);
+    		destHandles[i][destLen] = '\0'; 
+    		curBufSpot += destLen;
+
+			//look through the table and add that to here as well
+			int socketNumber = searchByKey(table, destHandles[i]);
+			destSockets[i] = socketNumber;
+
+			//DEBUG PRINT
+			printf("Destination %d: %s (Socket: %d)\n", i + 1, destHandles[i], destSockets[i]);
+		}
+
+    	//get the rest of the message
+    	char *messageToPass = (char *)(buffer + curBufSpot); 
+
+    	//for testing
+    	printf("PARSED Message: %s\n", messageToPass);
+
+    	//pass message to the forwarder
+    	forwardCPDU(currHandle, destHandles, numDest, messageToPass, buffer, messageLen);
+
 		return;
 	}
+
 	if(messageTypeFlag == L_FLAG){
 		return;
 	}
@@ -231,7 +296,7 @@ void parsePDU(int clientSocket, uint8_t *buffer, int messageLen){
 
 void recvFromClient(int clientSocket)
 {
-	uint8_t dataBuffer[MAXBUF];
+	uint8_t dataBuffer[MAXBUF]; 
 	int messageLen = 0;
 	
 	//now get the data from the client_socket

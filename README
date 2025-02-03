@@ -282,3 +282,8 @@ OK DID IT ALL WRONG RESTARTING:
         printf("Error response successfully sent to sender. Bytes sent: %d\n", sent);
       }
     }
+
+
+    %C TIME WOO!:
+    - making the packet:
+      [flag][length of sending client][sending client name][1 byte number of destinations][length of dest][dest name][message]

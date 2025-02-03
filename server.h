@@ -26,6 +26,7 @@
 #define VALID_FLAG 2
 #define INVALID_FLAG 3
 #define DNE_FLAG 7
+#define HANDLE_MAX 100
 
 void recvFromClient(int clientSocket);
 int checkArgs(int argc, char *argv[]);
@@ -33,3 +34,4 @@ void serverControl(int socketNumber);
 void processClient(int socketNumber);
 void addNewSocket(int socketNumber);
 void forwardMPDU(char* curHandle, char* destHandle, char* message, uint8_t* OGBuffer, int OGbufferLen);
+void forwardCPDU(char* curHandle, char destHandles[][HANDLE_MAX], int numDest, char* message, uint8_t* OGBuffer, int OGbufferLen);

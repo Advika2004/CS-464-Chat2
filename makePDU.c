@@ -81,9 +81,56 @@ void printPDU(uint8_t *pdu, int length) {
 }
 
 
-// uint8_t* makeCPDU(chunks){
+int makeCPDU(char **chunks, uint8_t *buffer){
+    
+    //uint8_t static buffer[MAX_M_PDU_LEN];
+    uint16_t whereWeAtInBuf = 0;
 
-// }
+    //1 byte for type of message
+    uint8_t flag = C_FLAG;
+    memcpy(buffer + whereWeAtInBuf, &flag, 1);
+    whereWeAtInBuf += 1;
+
+    // 1 byte for the sender handle length
+    uint8_t senderHandleLen = strlen(clientHandle);
+    memcpy(buffer + whereWeAtInBuf, &senderHandleLen, 1);
+    whereWeAtInBuf += 1;
+
+    // then the sender handle
+    memcpy(buffer + whereWeAtInBuf, clientHandle, senderHandleLen);
+    whereWeAtInBuf += senderHandleLen;
+
+    //1 byte destination handle
+    uint8_t numDestHandles = atoi(chunks[1]);
+    printf("HOW MANY HANDLES ARE BEING PUT IN BUFFER: %d\n", numDestHandles);
+    memcpy(buffer + whereWeAtInBuf, &numDestHandles, 1);
+    whereWeAtInBuf += 1;
+
+    //start after the number of destination handles, and add that into buffer
+    for (int i = 0; i < numDestHandles; i++){
+
+        //1 byte for the destination handle length
+        uint8_t destHandleLen = strlen(chunks[2 + i]); 
+        memcpy(buffer + whereWeAtInBuf, &destHandleLen, 1);
+        whereWeAtInBuf += 1;
+
+        // destination handle
+        memcpy(buffer + whereWeAtInBuf, chunks[2 + i], destHandleLen);
+        whereWeAtInBuf += destHandleLen;
+    }
+
+    // the actual message
+    char *message = chunks[numDestHandles + 2];
+    uint16_t messageLen = strlen(message) + 1;
+    memcpy(buffer + whereWeAtInBuf, message, messageLen);
+    whereWeAtInBuf += messageLen;
+
+    printPDU(buffer, whereWeAtInBuf);
+    printf("Total PDU Length: %d bytes\n", whereWeAtInBuf);
+
+    printPDU(buffer, whereWeAtInBuf);
+    return whereWeAtInBuf;
+}
 
 // uint8_t* makeBPDU(chunks){
 

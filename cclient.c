@@ -54,6 +54,8 @@ char** parseLine(uint8_t *buffer){
 
 	if (strcmp(firstChunk, "%C") == 0) { 
        char *number = strtok(NULL, " ");
+	   chunks[i] = number;
+	   i++;
 
 	   int numHandles = atoi(number);
 
@@ -85,6 +87,7 @@ char** parseLine(uint8_t *buffer){
     }
 
 	chunks[i] = NULL;
+	printChunks(chunks);
 	return chunks;
 }
 
@@ -132,6 +135,23 @@ void sendToServer(int socketNum)
 
 		printf("Sent %d bytes for %%M message.\n", Msent);
 	}
+
+	else if(strcmp(chunkArray[0], "%C") == 0){
+
+		uint8_t CBuf[MAXBUF];
+		int CLen = makeCPDU(chunkArray, CBuf);
+
+		int Csent = sendPDU(socketNum, CBuf, CLen);
+
+		if (Csent < 0)
+		{
+			perror("sendC call");
+			exit(-1);
+		}
+
+		printf("Sent %d bytes for %%C message.\n", Csent);
+	}
+
 
 	else{
 		printf("read: %s string len: %d (including null)\n", sendBuf, sendLen);
@@ -313,7 +333,7 @@ void processMsgFromServer(int serverSocket)
             printf("Client with handle %s does not exist.\n", handleName);
         }
 
-		else if (flag == M_FLAG){
+		else if (flag == M_FLAG || flag == C_FLAG){
 
 			printf("Buffer Contents (Hex): ");
     for (int i = 0; i < serverStatus; i++) {
@@ -346,28 +366,32 @@ void processMsgFromServer(int serverSocket)
     		curBufSpot += handleLen;
 
 			uint8_t numDest = buffer[curBufSpot];
+
+			printf("NUMBER OF DESTINATIONS:: %d\n", numDest);
+
     		curBufSpot++;
 
-    		if (numDest != 1) {
-        		printf("Error: Only one destination allowed, given %d\n", numDest);
-        		return;
-    		}
+			// get who sent it
+            for (int i = 0; i < numDest; i++) {
 
-    		// get out the destination
-    		uint8_t destLen = buffer[curBufSpot];
-			curBufSpot++;
+				// get out the destination
+    			uint8_t destLen = buffer[curBufSpot];
+				curBufSpot++;
+				char destHandle[destLen + 1];
 
-    		char destHandle[destLen + 1];
-    		memcpy(destHandle, buffer + curBufSpot, destLen);
-    		destHandle[destLen] = '\0'; 
-    		curBufSpot += destLen;
+                memcpy(destHandle, buffer + curBufSpot, destLen);
+    			destHandle[destLen] = '\0'; 
+    			curBufSpot += destLen;
+
+                printf("Message sent to: %s\n", destHandle);
+            }
 
     		//get the rest of the message
     		char *messageToPass = (char *)(buffer + curBufSpot); 
 
     		//for testing
     		printf("PARSED Sender Handle: %s\n", currHandle);
-    		printf("PARSED Destination Handle: %s\n", destHandle);
+    		//printf("PARSED Destination Handle: %s\n", destHandle);
     		printf("PARSED Message: %s\n", messageToPass);
 
     		printf("\n%s: %s\n", currHandle, messageToPass);
