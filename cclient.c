@@ -43,55 +43,114 @@ char** parseLine(uint8_t *buffer){
 	static char* chunks[MAX_CHUNKS];
 	int i = 0;
     char *firstChunk = strtok((char*)buffer, " ");
+
+	if (firstChunk == NULL) {
+            printf("Error: Missing Command.\n");
+			printf("Known commands are: %%M, %%C, %%B, %%L\n");
+            return NULL;
+	}
+
 	chunks[i] = firstChunk;
 	i++;
 
-	if (strcmp(firstChunk, "%M") == 0) { 
+	if (strcasecmp(firstChunk, "%M") == 0) { 
        char *handle = strtok(NULL, " "); 
+
+		if (handle == NULL) {
+            printf("Error: Missing destination handle.\n");
+            printf("Usage: %%M <destination handle> <text>\n");
+            return NULL;
+        }
+
 	   chunks[i] = handle;  
 	   i++;
+
        char *message = strtok(NULL, "\n"); 
+
+		// if there is no message treat it like its empty
+	   if (message == NULL) {
+            message = "";
+        }
+
+
 	   chunks[i] = message;
 	   i++;
     }
 
-	if (strcmp(firstChunk, "%C") == 0) { 
+	if (strcasecmp(firstChunk, "%C") == 0) { 
        char *number = strtok(NULL, " ");
+
+		if (number == NULL) {
+        	printf("Error: Missing number of destination handles.\n");
+        	printf("Usage: %%C <num-handles> <destination-handle> <destination-handle> <text>\n");
+        	return NULL;
+    	}
+
+
 	   chunks[i] = number;
 	   i++;
 
 	   int numHandles = atoi(number);
 
 	   if (numHandles < 2 || numHandles > 9){
-		printf("Too many or too little clients specified, please re-enter between 2-9 other clients\n");
-		return NULL;
+		printf("Error: Too many or not enough destination handles.\nPlease enter between 2-9 destinations.\n");
+        printf("Usage: %%C <num-handles> <destination-handle> <destination-handle> <text>\n");
+        return NULL;
 	   }
 
 	   int j = 0;
 	   for (j = 0; j < numHandles; j++){
 		char* curHandle = strtok(NULL, " ");
+
+		// Check if destination handle exists
+        if (curHandle == NULL) {
+            printf("Error: Missing destination handles.\n");
+            printf("Usage: %%C <num-handles> <destination-handle> <destination-handle> <text>\n");
+            return NULL;
+        }
+
 		chunks[i] = curHandle;
 		i++;
 	   }
 
        char *message = strtok(NULL, "\n"); 
+
+		//check for if the message is empty
+		if (message == NULL) {
+        	message = "";
+    	}
+
 	   chunks[i] = message;
 	   i++;
     }
 
-	if (strcmp(firstChunk, "%B") == 0) { 
+	if (strcasecmp(firstChunk, "%B") == 0) { 
        char *message = strtok(NULL, "\n"); 
+
+	//check for if the message is empty
+		if (message == NULL) {
+        	message = "";
+    	}
+
+
 	   chunks[i] = message;  
 	   i++;
     }
 
-	if (strcmp(firstChunk, "%L") == 0) { 
+	if (strcasecmp(firstChunk, "%L") == 0) { 
 		//first chunk already in the chunks array so do nothing.
 	   return chunks;
     }
 
+	else {
+        //if its neither of these commands
+        printf("Error: Unknown command '%s'.\n", firstChunk);
+        printf("Known commands are: %%M, %%C, %%B, %%L\n");
+        return NULL;
+    }
+
 	chunks[i] = NULL;
-	printChunks(chunks);
+	//printChunks(chunks);
 	return chunks;
 }
 
@@ -124,7 +183,7 @@ void sendToServer(int socketNum)
     	return;
 	}
 
-	else if(strcmp(chunkArray[0], "%M") == 0){
+	else if(strcasecmp(chunkArray[0], "%M") == 0){
 
 		uint8_t MBuf[MAX_M_PDU_LEN];
 		int MLen = makeMPDU(chunkArray, MBuf);
@@ -140,7 +199,7 @@ void sendToServer(int socketNum)
 		printf("Sent %d bytes for %%M message.\n", Msent);
 	}
 
-	else if(strcmp(chunkArray[0], "%C") == 0){
+	else if(strcasecmp(chunkArray[0], "%C") == 0){
 
 		uint8_t CBuf[MAXBUF];
 		int CLen = makeCPDU(chunkArray, CBuf);
@@ -156,7 +215,7 @@ void sendToServer(int socketNum)
 		printf("Sent %d bytes for %%C message.\n", Csent);
 	}
 
-	else if(strcmp(chunkArray[0], "%L") == 0){
+	else if(strcasecmp(chunkArray[0], "%L") == 0){
 		//only one byte just the flag
 		uint8_t LBuf[1];
 
@@ -174,7 +233,7 @@ void sendToServer(int socketNum)
 
 	}
 
-	else if(strcmp(chunkArray[0], "%B") == 0){
+	else if(strcasecmp(chunkArray[0], "%B") == 0){
 
 		//just the flag and the message
 		uint8_t BBuf[MAX_TEXT + 1];
@@ -295,7 +354,7 @@ int readFromStdin(uint8_t * buffer)
         	}
    		}
 		return 0;
-	}
+	}  
 
 	return inputLen;
 }
@@ -305,9 +364,16 @@ void checkArgs(int argc, char * argv[])
 	/* check command line arguments  */
 	if (argc != 4)
 	{
-		printf("usage: ./cclient (handle) (server_ip) (server_port)\n");
+		printf("Wrong Inputs.\nPlease Provide: ./cclient <handle> <server_ip> <server_port>\n");
 		exit(1);
 	}
+
+	// check if given handle is too long
+    if (strlen(argv[1]) > HANDLE_MAX - 1) { 
+        printf("Handle name is above 100 characters.\nPlease input a handle name less than 100 characters.\n");
+        exit(1);
+    }
+
 }
 
 void clientControl(int serverSocket){
@@ -493,3 +559,7 @@ void processStdin(int serverSocket)
 	sendToServer(serverSocket);
 	return;
 }
+
+
+
+
