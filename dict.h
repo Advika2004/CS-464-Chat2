@@ -28,6 +28,7 @@ char *searchByValue(Dict *dct, int value); //returns the key
 void dctRemoveKey(Dict *dct, char *key);
 void dctRemoveValue(Dict *dct, int value);
 void dctrehash(Dict *dct);
+char **dctkeys(Dict *dct);
 
 //globals
 struct Dict *table;

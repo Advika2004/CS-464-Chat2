@@ -36,6 +36,8 @@ typedef struct PercentMMessage {
 
 // macros
 #define MAX_MESSAGE_LENGTH 1400
+//is this 199 or 200?
+#define MAX_TEXT 199
 #define MAXBUF 1024
 #define DEBUG_FLAG 1
 #define MAX_CHUNKS 12
@@ -45,6 +47,9 @@ typedef struct PercentMMessage {
 #define B_FLAG 4
 #define C_FLAG 6
 #define DNE_FLAG 7
+#define LIST_HANDLE 12
 
 // global 
 char clientHandle[HANDLE_MAX];
+int printPromptFlag;
+int handlesInList;

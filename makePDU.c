@@ -160,10 +160,67 @@ int makeServerLPDU(uint32_t numHandles, uint8_t *buffer){
     whereWeAtInBuf += 1;
 
     //put in the 32 bit number of handles in network order into the buffer
+    printf("NUM HANDLES WHEN MAKING PDU TO SEND %d\n", numHandles);
     memcpy(buffer + whereWeAtInBuf, &numHandles, 4);
     whereWeAtInBuf += 4;
 
     printPDU(buffer, whereWeAtInBuf);
     return whereWeAtInBuf;
 
+}
+
+int makeListNamesPDU(char* handle, uint8_t *buffer){
+
+    // [flag][length][handle NO NULL]
+
+    uint16_t whereWeAtInBuf = 0;
+
+    //send back the flag 12
+    uint8_t flag = LIST_HANDLE;
+    memcpy(buffer + whereWeAtInBuf, &flag, 1);
+    whereWeAtInBuf += 1;
+
+     // 1 byte for the sender handle length
+    uint8_t HandleLen = strlen(handle);
+    memcpy(buffer + whereWeAtInBuf, &HandleLen, 1);
+    whereWeAtInBuf += 1;
+
+    //100 bytes for the handle
+    memcpy(buffer + whereWeAtInBuf, handle, HandleLen);
+    whereWeAtInBuf += HandleLen;
+
+    printPDU(buffer, whereWeAtInBuf);
+
+    return whereWeAtInBuf;
+
+}
+
+int makeBRequestPDU(char **chunks, uint8_t *buffer){
+    //[flag][1 byte client's handle][handle name of client][text message]
+
+    //uint8_t static buffer[MAX_M_PDU_LEN];
+    uint16_t whereWeAtInBuf = 0;
+
+    //1 byte for type of message
+    uint8_t flag = B_FLAG;
+    memcpy(buffer + whereWeAtInBuf, &flag, 1);
+    whereWeAtInBuf += 1;
+
+    // 1 byte for the sender handle length
+    uint8_t senderHandleLen = strlen(clientHandle);
+    memcpy(buffer + whereWeAtInBuf, &senderHandleLen, 1);
+    whereWeAtInBuf += 1;
+
+    // then the sender handle
+    memcpy(buffer + whereWeAtInBuf, clientHandle, senderHandleLen);
+    whereWeAtInBuf += senderHandleLen;
+
+    // the actual message
+    char *message = chunks[1];
+    uint16_t messageLen = strlen(message) + 1;
+    memcpy(buffer + whereWeAtInBuf, message, messageLen);
+    whereWeAtInBuf += messageLen;
+
+    printPDU(buffer, whereWeAtInBuf);
+    return whereWeAtInBuf;
 }

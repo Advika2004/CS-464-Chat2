@@ -71,15 +71,43 @@ uint8_t validateHandle(Dict *table, char* handle, int clientSocket){
 	return INVALID_FLAG;
 }
 
+void forwardBPDU(int socketNum, uint8_t* OGBuffer, int OGbufferLen){
+
+	//get all of the keys in the table rn and forward the OG buffer to all of them
+	char** allKeys = dctkeys(table);
+
+	for (int i = 0; i < table->size; i++){
+
+		// find who is sending it and skip them
+        int clientSocket = searchByKey(table, allKeys[i]);
+
+        // Skip sending the message back to the sender
+        if (socketNum == clientSocket) {
+            continue;
+        }
+
+		int sent = sendPDU(clientSocket, OGBuffer, OGbufferLen);
+
+    	if (sent < 0){
+            perror("forwarding %B message failed\n");
+            exit(-1);
+        }
+
+		printf("Broadcast sent to '%s' (Socket: %d), Bytes sent: %d\n", allKeys[i], clientSocket, sent);
+	}
+}
+
+
 void forwardLPDU(int socketNum){
 
 	//how many handles there currently are
 	//put that into network order 32 bit
 	uint32_t numTotalHandles = table->size;
+	printf("HOW MANY CLIENTS IN TABLE WHEN FORWARDING??: %d\n", numTotalHandles);
 	uint32_t numTotalHandlesNET = htonl(numTotalHandles);
 
 	//make a buffer big enough to send that
-	uint8_t totalClients[numTotalHandles];
+	uint8_t totalClients[5]; //flag + 4 byte number
 
 	//make the response buffer [flag 11][number of handles total]
 	int sendLen = makeServerLPDU(numTotalHandlesNET, totalClients);
@@ -93,8 +121,29 @@ void forwardLPDU(int socketNum){
 	printf("Message successfully sent! Bytes sent: %d\n", sent);
 
 	//now have to do the second send...right? and make new packets?? 
-    return;
+
+	char** allKeys = dctkeys(table);
+
+	for (int i = 0; i < table->size; i++){
+
+		//make the buffer big enough for 1 byte flag, 1 byte length, then handle
+		uint8_t handleNameBuf[HANDLE_MAX + 2];
+
+		int sendLists = makeListNamesPDU(allKeys[i], handleNameBuf);
+
+		int sent = sendPDU(socketNum, handleNameBuf, sendLists);
+
+    	if (sent < 0){
+            perror("forwarding %L message failed\n");
+            exit(-1);
+        }
+
+		printf("Handle '%s' sent successfully! Bytes sent: %d\n", allKeys[i], sent);
+	}
+
+	return;
 }
+
 
 void forwardCPDU(char* curHandle, char destHandles[][HANDLE_MAX], int numDest, char* message, uint8_t* OGBuffer, int OGbufferLen) {
     printf("FORWARDING MULTICAST MESSAGE...\n");
@@ -258,6 +307,11 @@ void parsePDU(int clientSocket, uint8_t *buffer, int messageLen){
 	}
 
 	if(messageTypeFlag == B_FLAG){
+
+		printf("BROADCAST PACKET RECEIVED\n");
+
+		forwardBPDU(clientSocket, buffer, messageLen);
+
 		return;
 	}
 
@@ -318,7 +372,7 @@ void parsePDU(int clientSocket, uint8_t *buffer, int messageLen){
 
 		printf("LIST PACKET RECEIVED\n");
 
-		forwardLPDU();
+		forwardLPDU(clientSocket);
 
 		return;
 	}

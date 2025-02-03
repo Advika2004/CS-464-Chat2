@@ -13,6 +13,9 @@
 #include "cclient.h"
 #include "makePDU.h"
 
+int printPromptFlag = 1;
+int handlesInList = 0;
+
 int main(int argc, char * argv[])
 {
 	int socketNum = 0;         //socket descriptor
@@ -171,6 +174,25 @@ void sendToServer(int socketNum)
 
 	}
 
+	else if(strcmp(chunkArray[0], "%B") == 0){
+
+		//just the flag and the message
+		uint8_t BBuf[MAX_TEXT + 1];
+
+		int BLen = makeBRequestPDU(chunkArray, BBuf);
+
+		int BSent = sendPDU(socketNum, BBuf, BLen);
+
+		if (BSent < 0)
+		{
+			perror("sendB call");
+			exit(-1);
+		}
+
+		printf("Sent %d bytes for %%C message.\n", BSent);
+
+	}
+
 	else{
 		printf("read: %s string len: %d (including null)\n", sendBuf, sendLen);
 	
@@ -184,7 +206,7 @@ void sendToServer(int socketNum)
 
 		printf("Amount of data sent is: %d\n", sent);
 	}
-}
+}	
 
 
 void receiveHandleConf(int socketNum){
@@ -295,25 +317,20 @@ void clientControl(int serverSocket){
 	addToPollSet(serverSocket);
 	addToPollSet(STDIN_FILENO);
 
-	int printPromptFlag = 1;
-
 	while(1){
 
 		if (printPromptFlag == 1) {
 			printf("$: ");
 			fflush(stdout);
-			printPromptFlag = 0;
 		}
 	
 		// the current socket is what the pollcall will return 
 		int currentSocket = pollCall(-1);
 		if (currentSocket == serverSocket){
 			processMsgFromServer(currentSocket);
-			printPromptFlag = 1;
 		}
 		else if (currentSocket == STDIN_FILENO) {
 			processStdin(serverSocket);
-			printPromptFlag = 1;
 		}
 	}
 }
@@ -351,24 +368,76 @@ void processMsgFromServer(int serverSocket)
             printf("Client with handle %s does not exist.\n", handleName);
         }
 
+		else if (flag == LIST_ACK){
+
+			 // print out the start of the list
+            uint32_t handleLength;
+			//take the next 4 bytes out as one number past the flag
+			memcpy(&handleLength, buffer + 1, 4);
+			uint32_t hanldeLengthHOST = ntohl(handleLength);
+
+			handlesInList = hanldeLengthHOST;
+
+			printPromptFlag = 0;
+
+			printf("Number of clients: %d\n", hanldeLengthHOST);
+		}
+
+		else if (flag == LIST_HANDLE){
+
+			printPromptFlag = 0;
+
+		//[1 byte flag][1 byte length][handle]
+
+			uint8_t destLen = buffer[1];
+
+			// no +1 for the null terminator
+			char destHandle[destLen + 1];
+
+            memcpy(destHandle, buffer + 2, destLen);
+			destHandle[destLen] = '\0';
+
+            printf("\t%s\n", destHandle);
+
+			handlesInList--;
+
+			if(handlesInList == 0){
+				printPromptFlag = 1;
+			}
+			
+		}
+
+		else if (flag == B_FLAG){
+
+			//[]flag][sending length][sender handle][message]
+
+			//take out the sending handle length after the flag
+			int curBufSpot = 1;
+
+   			uint8_t handleLen = buffer[curBufSpot];
+    		char currHandle[handleLen + 1];  // +1 for null terminator
+
+			curBufSpot++;
+
+			//take out the sending handle
+    		memcpy(currHandle, buffer + curBufSpot, handleLen);
+    		currHandle[handleLen] = '\0'; 
+    		curBufSpot += handleLen;
+
+			//get the rest of the message
+    		char *messageToPass = (char *)(buffer + curBufSpot); 
+
+    		//for testing
+    		printf("PARSED Sender Handle: %s\n", currHandle);
+    		//printf("PARSED Destination Handle: %s\n", destHandle);
+    		printf("PARSED Message: %s\n", messageToPass);
+
+    		printf("\n%s: %s\n", currHandle, messageToPass);
+    		fflush(stdout);
+
+		}
+
 		else if (flag == M_FLAG || flag == C_FLAG){
-
-			printf("Buffer Contents (Hex): ");
-    for (int i = 0; i < serverStatus; i++) {
-        printf("%02X ", buffer[i]);
-    }
-    printf("\n");
-
-    // ✅ Directly print the buffer contents (ASCII)
-    printf("Buffer Contents (ASCII): ");
-    for (int i = 0; i < serverStatus; i++) {
-        if (buffer[i] >= 32 && buffer[i] <= 126) {
-            printf("%c", buffer[i]);  // Printable characters
-        } else {
-            printf(".");  // Non-printable characters as '.'
-        }
-    }
-    printf("\n");
 
 			//CAN REFACTOR THIS	
 			

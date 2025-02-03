@@ -250,3 +250,37 @@ void dctrehash(Dict *dct)
     dct->arr = newArr;
     dct->cap = newCap;
 }
+
+// dctkeys: Enumerates all of the keys in a dictionary.
+
+char **dctkeys(Dict *dct) {
+    char **keys;
+    Node *current;
+    int i = 0;
+    int j = 0;
+    int keyCount = dct->size;
+
+    if (dct==NULL){
+        return NULL;
+    }
+
+    if (keyCount == 0){
+        return NULL;
+    }
+
+    keys = (char **)malloc(sizeof(char*) * keyCount);
+    if (keys == NULL) {  /*have to check if the MALLOCKING failed */
+        return NULL;
+    }
+
+    for (i = 0; i < dct->cap; i++) { /*keeping track of the backing array going through indeces of that */
+        current = dct->arr[i]; /*the current node is the index I am at*/
+
+        while (current != NULL){ /* while I still have nodes*/
+            keys[j] = current->key; /*go through the array I have mallocked */
+            j++; /*increment that*/
+            current = current->next; /*go to the next node*/
+            }
+        }
+    return keys; 
+}
