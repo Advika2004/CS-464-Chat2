@@ -287,3 +287,13 @@ OK DID IT ALL WRONG RESTARTING:
     %C TIME WOO!:
     - making the packet:
       [flag][length of sending client][sending client name][1 byte number of destinations][length of dest][dest name][message]
+
+      %L
+      - okay so first if parsed and receive a %L then makeLPDU() which just puts the one byte flag into the Buffer
+      - sends that to the server
+      - if the server gets a flag 10, it will create a response packet
+      - will find table->size and store that into the buffer in network order + flag 11
+      - will send that to the client
+      - if the client gets back a flag 11, it will read out how many handles there are and print out
+      - will print out Number of handles: then the number
+      - 

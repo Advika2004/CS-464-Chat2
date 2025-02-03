@@ -2,9 +2,13 @@
 
 #define MAX_M_PDU_LEN 1604
 #define INTRO_PDU_LEN 102
+#define LIST_REQUEST 10
+#define LIST_ACK 11
 
 
 uint8_t* makeIntroPDU();
 int makeMPDU(char **chunks, uint8_t *buffer);
 void printPDU(uint8_t *pdu, int length);
 int makeCPDU(char **chunks, uint8_t *buffer);
+int makeIntroLPDU(char **chunks, uint8_t *buffer);
+int makeServerLPDU(int numHandles, uint8_t *buffer);

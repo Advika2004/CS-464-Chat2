@@ -83,7 +83,8 @@ char** parseLine(uint8_t *buffer){
     }
 
 	if (strcmp(firstChunk, "%L") == 0) { 
-	   //fill this in later idk what this does yet 
+		//first chunk already in the chunks array so do nothing.
+	   return chunks;
     }
 
 	chunks[i] = NULL;
@@ -152,6 +153,23 @@ void sendToServer(int socketNum)
 		printf("Sent %d bytes for %%C message.\n", Csent);
 	}
 
+	else if(strcmp(chunkArray[0], "%L") == 0){
+		//only one byte just the flag
+		uint8_t LBuf[1];
+
+		int LLen = makeIntroLPDU(chunkArray, LBuf);
+		
+		int LSent = sendPDU(socketNum, LBuf, LLen);
+
+		if (LSent < 0)
+		{
+			perror("sendL call");
+			exit(-1);
+		}
+
+		printf("Sent %d bytes for %%C message.\n", LSent);
+
+	}
 
 	else{
 		printf("read: %s string len: %d (including null)\n", sendBuf, sendLen);

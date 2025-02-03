@@ -71,6 +71,31 @@ uint8_t validateHandle(Dict *table, char* handle, int clientSocket){
 	return INVALID_FLAG;
 }
 
+void forwardLPDU(int socketNum){
+
+	//how many handles there currently are
+	//put that into network order 32 bit
+	uint32_t numTotalHandles = table->size;
+	uint32_t numTotalHandlesNET = htonl(numTotalHandles);
+
+	//make a buffer big enough to send that
+	uint8_t totalClients[numTotalHandles];
+
+	//make the response buffer [flag 11][number of handles total]
+	int sendLen = makeServerLPDU(numTotalHandlesNET, totalClients);
+	int sent = sendPDU(socketNum, totalClients, sendLen);
+
+    if (sent < 0){
+            perror("forwarding %L message failed\n");
+            exit(-1);
+        }
+
+	printf("Message successfully sent! Bytes sent: %d\n", sent);
+
+	//now have to do the second send...right? and make new packets?? 
+    return;
+}
+
 void forwardCPDU(char* curHandle, char destHandles[][HANDLE_MAX], int numDest, char* message, uint8_t* OGBuffer, int OGbufferLen) {
     printf("FORWARDING MULTICAST MESSAGE...\n");
     printf("Current Handle: %s\n", curHandle);
@@ -290,6 +315,11 @@ void parsePDU(int clientSocket, uint8_t *buffer, int messageLen){
 	}
 
 	if(messageTypeFlag == L_FLAG){
+
+		printf("LIST PACKET RECEIVED\n");
+
+		forwardLPDU();
+
 		return;
 	}
 }

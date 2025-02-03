@@ -136,6 +136,34 @@ int makeCPDU(char **chunks, uint8_t *buffer){
 
 // }
 
-// uint8_t* makeLPDU(chunks){
+int makeIntroLPDU(char **chunks, uint8_t *buffer){
 
-// }
+    uint16_t whereWeAtInBuf = 0;
+
+    //1 byte for type of message
+    uint8_t flag = LIST_REQUEST;
+    memcpy(buffer + whereWeAtInBuf, &flag, 1);
+    whereWeAtInBuf += 1;
+
+    printPDU(buffer, whereWeAtInBuf);
+    return whereWeAtInBuf;
+
+}
+
+int makeServerLPDU(uint32_t numHandles, uint8_t *buffer){
+
+    uint16_t whereWeAtInBuf = 0;
+
+    //send back the flag 11
+    uint8_t flag = LIST_ACK;
+    memcpy(buffer + whereWeAtInBuf, &flag, 1);
+    whereWeAtInBuf += 1;
+
+    //put in the 32 bit number of handles in network order into the buffer
+    memcpy(buffer + whereWeAtInBuf, &numHandles, 4);
+    whereWeAtInBuf += 4;
+
+    printPDU(buffer, whereWeAtInBuf);
+    return whereWeAtInBuf;
+
+}
