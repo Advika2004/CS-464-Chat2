@@ -369,7 +369,7 @@ void checkArgs(int argc, char * argv[])
 
 	// check if given handle is too long
     if (strlen(argv[1]) > HANDLE_MAX - 1) { 
-        printf("Handle name is above 100 characters.\nPlease input a handle name less than 100 characters.\n");
+        printf(" Invalid handle, handle longer than 100 characters: %s\n", argv[1]);
         exit(1);
     }
 
@@ -409,7 +409,7 @@ void processMsgFromServer(int serverSocket)
 
 	if (serverStatus == 0)
     {
-        printf("Server has terminated.\n");
+        printf("Server terminated.\n");
         close(serverSocket);
         exit(0);
     }
