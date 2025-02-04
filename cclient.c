@@ -243,19 +243,51 @@ void sendToServer(int socketNum)
 
 	else if(strcasecmp(chunkArray[0], "%C") == 0){
 
-		uint8_t CBuf[MAXBUF];
-		int CLen = makeCPDU(chunkArray, CBuf);
+		int numDestHandles = atoi(chunkArray[1]);
+    char* message = chunkArray[numDestHandles + 2];
+    int messageLength = strlen(message);
+    int chunksToSend = 0;
 
-		int Csent = sendPDU(socketNum, CBuf, CLen);
+    if (messageLength > 199) {
+        chunksToSend = (messageLength / 199);
+        if (messageLength % 199 != 0) {
+            chunksToSend += 1;
+        }
+    } else {
+        chunksToSend = 1;
+    }
 
-		if (Csent < 0)
-		{
-			perror("sendC call");
-			exit(-1);
-		}
+    for (int i = 0; i < chunksToSend; i++) {
 
-		printf("Sent %d bytes for %%C message.\n", Csent);
-	}
+        char newChunk[200];
+        int twoHunnidOffset = i * 199;
+        int howMuchToCopy = 0;
+
+        if (messageLength - twoHunnidOffset >= 199) {
+            howMuchToCopy = 199;
+        } else {
+            howMuchToCopy = messageLength - twoHunnidOffset;
+        }
+
+        memcpy(newChunk, message + twoHunnidOffset, howMuchToCopy);
+        newChunk[howMuchToCopy] = '\0';
+
+        // Update the message part in chunkArray
+        chunkArray[numDestHandles + 2] = newChunk;
+
+        uint8_t CBuf[MAXBUF];
+        int CLen = makeCPDU(chunkArray, CBuf);
+
+        int Csent = sendPDU(socketNum, CBuf, CLen);
+
+        if (Csent < 0) {
+            perror("sendC call");
+            exit(-1);
+        }
+
+        printf("Sent %d bytes for %%C message (chunk %d).\n", Csent, i + 1);
+    }
+}
 
 	else if(strcasecmp(chunkArray[0], "%L") == 0){
 		//only one byte just the flag
@@ -276,22 +308,50 @@ void sendToServer(int socketNum)
 	}
 
 	else if(strcasecmp(chunkArray[0], "%B") == 0){
+		
+		char* message = chunkArray[1];
+    int messageLength = strlen(message);
+    int chunksToSend = 0;
 
-		//just the flag and the message
-		uint8_t BBuf[MAX_TEXT + 1];
+    if (messageLength > 199) {
+        chunksToSend = (messageLength / 199);
+        if (messageLength % 199 != 0) {
+            chunksToSend += 1;
+        }
+    } else {
+        chunksToSend = 1;
+    }
 
-		int BLen = makeBRequestPDU(chunkArray, BBuf);
+    for (int i = 0; i < chunksToSend; i++) {
 
-		int BSent = sendPDU(socketNum, BBuf, BLen);
+        char newChunk[200];
+        int twoHunnidOffset = i * 199;
+        int howMuchToCopy = 0;
 
-		if (BSent < 0)
-		{
-			perror("sendB call");
-			exit(-1);
-		}
+        if (messageLength - twoHunnidOffset >= 199) {
+            howMuchToCopy = 199;
+        } else {
+            howMuchToCopy = messageLength - twoHunnidOffset;
+        }
 
-		printf("Sent %d bytes for %%C message.\n", BSent);
+        memcpy(newChunk, message + twoHunnidOffset, howMuchToCopy);
+        newChunk[howMuchToCopy] = '\0';
 
+        // Update the message part in chunkArray
+        chunkArray[1] = newChunk;
+
+        uint8_t BBuf[MAX_TEXT + 1];
+        int BLen = makeBRequestPDU(chunkArray, BBuf);
+
+        int BSent = sendPDU(socketNum, BBuf, BLen);
+
+        if (BSent < 0) {
+            perror("sendB call");
+            exit(-1);
+        }
+
+        printf("Sent %d bytes for %%B message (chunk %d).\n", BSent, i + 1);
+    	}
 	}
 
 	else{

@@ -26,6 +26,7 @@ void sendHandle(int socketNum);
 void receiveHandleConf(int socketNum);
 void printChunks(char **chunks);
 char** parseLine(uint8_t *buffer);
+void sendChunkedMessage(int socketNum, char **chunkArray, int messageIndex, int (*makePDUFunc)(char **, uint8_t *));
 
 
 // structs
