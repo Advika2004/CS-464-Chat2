@@ -28,7 +28,6 @@ void printChunks(char **chunks);
 char** parseLine(uint8_t *buffer);
 void sendChunkedMessage(int socketNum, char **chunkArray, int messageIndex, int (*makePDUFunc)(char **, uint8_t *));
 
-
 // structs
 typedef struct PercentMMessage {
     uint8_t handle[101];
