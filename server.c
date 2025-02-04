@@ -140,9 +140,21 @@ void forwardLPDU(int socketNum){
 
 		printf("Handle '%s' sent successfully! Bytes sent: %d\n", allKeys[i], sent);
 	}
+ 
+	//send the last flag because the list was done sending
+    uint8_t doneFlag = LIST_DONE;
+    sent = sendPDU(socketNum, &doneFlag, 1); //just send that one flag over no need to make any pdu
 
-	return;
+    if (sent < 0) {
+        perror("list done flag not send\n");
+        exit(-1);
+    }
+
+    printf("Flag 13 (completion) sent successfully! Bytes sent: %d\n", sent);
+
+	 return;
 }
+
 
 
 void forwardCPDU(char* curHandle, char destHandles[][HANDLE_MAX], int numDest, char* message, uint8_t* OGBuffer, int OGbufferLen) {

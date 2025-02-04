@@ -28,6 +28,7 @@
 #define DNE_FLAG 7
 #define LIST_HANDLE 12
 #define HANDLE_MAX 100
+#define LIST_DONE 13
 
 void recvFromClient(int clientSocket);
 int checkArgs(int argc, char *argv[]);

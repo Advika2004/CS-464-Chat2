@@ -137,6 +137,8 @@ char** parseLine(uint8_t *buffer){
     }
 
 	else if (strcasecmp(firstChunk, "%L") == 0) { 
+
+		printPromptFlag = 0; 
 		//first chunk already in the chunks array so do nothing.
 	   return chunks;
     }
@@ -424,7 +426,7 @@ void processMsgFromServer(int serverSocket)
             uint8_t handleLength = buffer[1];      
 
 printf("Handle Length Parsed: %d\n", handleLength); 
-        
+
             char handleName[HANDLE_MAX];    
 
 			// go past the flag and the length (+2)                 
@@ -436,13 +438,13 @@ printf("Handle Length Parsed: %d\n", handleLength);
 
 		else if (flag == LIST_ACK){
 
+			printPromptFlag = 0;
+
 			 // print out the start of the list
             uint32_t handleLength;
 			//take the next 4 bytes out as one number past the flag
 			memcpy(&handleLength, buffer + 1, 4);
 			uint32_t hanldeLengthHOST = ntohl(handleLength);
-
-			handlesInList = hanldeLengthHOST;
 
 			printPromptFlag = 0;
 
@@ -464,13 +466,12 @@ printf("Handle Length Parsed: %d\n", handleLength);
 			destHandle[destLen] = '\0';
 
             printf("\t%s\n", destHandle);
-
-			handlesInList--;
-
-			if(handlesInList == 0){
-				printPromptFlag = 1;
-			}
 			
+		}
+
+		else if (flag == LIST_DONE){
+			printPromptFlag = 1;
+			return;
 		}
 
 		else if (flag == B_FLAG){

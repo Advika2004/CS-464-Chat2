@@ -48,8 +48,8 @@ typedef struct PercentMMessage {
 #define C_FLAG 6
 #define DNE_FLAG 7
 #define LIST_HANDLE 12
+#define LIST_DONE 13
 
 // global 
 char clientHandle[HANDLE_MAX];
 int printPromptFlag;
-int handlesInList;
