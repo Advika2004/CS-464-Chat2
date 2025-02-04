@@ -39,7 +39,8 @@ typedef struct PercentMMessage {
 //is this 199 or 200?
 #define MAX_TEXT 199
 #define MAXBUF 1024
-#define DEBUG_FLAG 1
+//turned it off to turn it in
+#define DEBUG_FLAG 0
 #define MAX_CHUNKS 12
 #define HANDLE_MAX 100
 #define M_FLAG 5

@@ -55,30 +55,30 @@ int makeMPDU(char **chunks, uint8_t *buffer){
     memcpy(buffer + whereWeAtInBuf, message, messageLen);
     whereWeAtInBuf += messageLen;
 
-    printPDU(buffer, whereWeAtInBuf);
-    printf("Total PDU Length: %d bytes\n", whereWeAtInBuf);
+    //printPDU(buffer, whereWeAtInBuf);
+    //printf("Total PDU Length: %d bytes\n", whereWeAtInBuf);
 
 
     return whereWeAtInBuf;
 }
 
-void printPDU(uint8_t *pdu, int length) {
-    printf("PDU Contents (Hex): ");
-    for (int i = 0; i < length; i++) {
-        printf("%02X ", pdu[i]);  // Print each byte in hexadecimal
-    }
-    printf("\n");
+// void printPDU(uint8_t *pdu, int length) {
+//     printf("PDU Contents (Hex): ");
+//     for (int i = 0; i < length; i++) {
+//         printf("%02X ", pdu[i]);  // Print each byte in hexadecimal
+//     }
+//     printf("\n");
 
-    printf("PDU Contents (ASCII): ");
-    for (int i = 0; i < length; i++) {
-        if (pdu[i] >= 32 && pdu[i] <= 126) {
-            printf("%c", pdu[i]);  // Printable characters
-        } else {
-            printf(".");          // Non-printable characters as dots
-        }
-    }
-    printf("\n");
-}
+//     printf("PDU Contents (ASCII): ");
+//     for (int i = 0; i < length; i++) {
+//         if (pdu[i] >= 32 && pdu[i] <= 126) {
+//             printf("%c", pdu[i]);  // Printable characters
+//         } else {
+//             printf(".");          // Non-printable characters as dots
+//         }
+//     }
+//     printf("\n");
+// }
 
 
 int makeCPDU(char **chunks, uint8_t *buffer){
@@ -102,7 +102,7 @@ int makeCPDU(char **chunks, uint8_t *buffer){
 
     //1 byte destination handle
     uint8_t numDestHandles = atoi(chunks[1]);
-    printf("HOW MANY HANDLES ARE BEING PUT IN BUFFER: %d\n", numDestHandles);
+    //printf("HOW MANY HANDLES ARE BEING PUT IN BUFFER: %d\n", numDestHandles);
     memcpy(buffer + whereWeAtInBuf, &numDestHandles, 1);
     whereWeAtInBuf += 1;
 
@@ -125,10 +125,10 @@ int makeCPDU(char **chunks, uint8_t *buffer){
     memcpy(buffer + whereWeAtInBuf, message, messageLen);
     whereWeAtInBuf += messageLen;
 
-    printPDU(buffer, whereWeAtInBuf);
-    printf("Total PDU Length: %d bytes\n", whereWeAtInBuf);
+    //printPDU(buffer, whereWeAtInBuf);
+    //printf("Total PDU Length: %d bytes\n", whereWeAtInBuf);
 
-    printPDU(buffer, whereWeAtInBuf);
+    //printPDU(buffer, whereWeAtInBuf);
     return whereWeAtInBuf;
 }
 
@@ -145,7 +145,7 @@ int makeIntroLPDU(char **chunks, uint8_t *buffer){
     memcpy(buffer + whereWeAtInBuf, &flag, 1);
     whereWeAtInBuf += 1;
 
-    printPDU(buffer, whereWeAtInBuf);
+    //printPDU(buffer, whereWeAtInBuf);
     return whereWeAtInBuf;
 
 }
@@ -160,11 +160,11 @@ int makeServerLPDU(uint32_t numHandles, uint8_t *buffer){
     whereWeAtInBuf += 1;
 
     //put in the 32 bit number of handles in network order into the buffer
-    printf("NUM HANDLES WHEN MAKING PDU TO SEND %d\n", numHandles);
+    //printf("NUM HANDLES WHEN MAKING PDU TO SEND %d\n", numHandles);
     memcpy(buffer + whereWeAtInBuf, &numHandles, 4);
     whereWeAtInBuf += 4;
 
-    printPDU(buffer, whereWeAtInBuf);
+    //printPDU(buffer, whereWeAtInBuf);
     return whereWeAtInBuf;
 
 }
@@ -189,7 +189,7 @@ int makeListNamesPDU(char* handle, uint8_t *buffer){
     memcpy(buffer + whereWeAtInBuf, handle, HandleLen);
     whereWeAtInBuf += HandleLen;
 
-    printPDU(buffer, whereWeAtInBuf);
+    //printPDU(buffer, whereWeAtInBuf);
 
     return whereWeAtInBuf;
 
@@ -221,6 +221,6 @@ int makeBRequestPDU(char **chunks, uint8_t *buffer){
     memcpy(buffer + whereWeAtInBuf, message, messageLen);
     whereWeAtInBuf += messageLen;
 
-    printPDU(buffer, whereWeAtInBuf);
+    //printPDU(buffer, whereWeAtInBuf);
     return whereWeAtInBuf;
 }

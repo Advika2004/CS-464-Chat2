@@ -15,7 +15,8 @@
 
 
 #define MAXBUF 1024
-#define DEBUG_FLAG 1
+//turned it off to turn it in
+#define DEBUG_FLAG 0
 
 // the flags
 #define INTRO_FLAG 1

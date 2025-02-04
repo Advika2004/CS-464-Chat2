@@ -50,22 +50,23 @@ int main(int argc, char *argv[])
 //if it isnt, it will add it into the table, and return the valid flag
 uint8_t validateHandle(Dict *table, char* handle, int clientSocket){
 
-	printf("LOOKING FOR KEY: %s\n", handle);
+	//printf("LOOKING FOR KEY: %s\n", handle);
 	int uniqueOrNah = searchByKey(table, handle);
-	printf("IS IT IN THE TABLE?: %d\n", uniqueOrNah);
+	//printf("IS IT IN THE TABLE?: %d\n", uniqueOrNah);
 
 	if(uniqueOrNah == -1){
 		//key is not found, so it is unique, send back the flag
 		dctInsert(table, handle, clientSocket);
 
 		//checking if I can get values out of my table
-		int num = searchByKey(table, handle);
-		char* han = searchByValue(table, clientSocket);
-		printf("HERE: the socketnum just added: %d\n", num);
-		printf("HERE: the handle just added: %s\n", han);
+		// int num = searchByKey(table, handle);
+		// char* han = searchByValue(table, clientSocket);
+		
+		//printf("HERE: the socketnum just added: %d\n", num);
+		//printf("HERE: the handle just added: %s\n", han);
 
 
-		printf("DEBUG - TABLE SIZE AFTER INSERTED: %d\n", table->size);
+		//printf("DEBUG - TABLE SIZE AFTER INSERTED: %d\n", table->size);
 		return VALID_FLAG;
 	}
 	return INVALID_FLAG;
@@ -93,7 +94,7 @@ void forwardBPDU(int socketNum, uint8_t* OGBuffer, int OGbufferLen){
             exit(-1);
         }
 
-		printf("Broadcast sent to '%s' (Socket: %d), Bytes sent: %d\n", allKeys[i], clientSocket, sent);
+		//printf("Broadcast sent to '%s' (Socket: %d), Bytes sent: %d\n", allKeys[i], clientSocket, sent);
 	}
 }
 
@@ -103,7 +104,7 @@ void forwardLPDU(int socketNum){
 	//how many handles there currently are
 	//put that into network order 32 bit
 	uint32_t numTotalHandles = table->size;
-	printf("HOW MANY CLIENTS IN TABLE WHEN FORWARDING??: %d\n", numTotalHandles);
+	//printf("HOW MANY CLIENTS IN TABLE WHEN FORWARDING??: %d\n", numTotalHandles);
 	uint32_t numTotalHandlesNET = htonl(numTotalHandles);
 
 	//make a buffer big enough to send that
@@ -118,7 +119,7 @@ void forwardLPDU(int socketNum){
             exit(-1);
         }
 
-	printf("Message successfully sent! Bytes sent: %d\n", sent);
+	//printf("Message successfully sent! Bytes sent: %d\n", sent);
 
 	//now have to do the second send...right? and make new packets?? 
 
@@ -138,7 +139,7 @@ void forwardLPDU(int socketNum){
             exit(-1);
         }
 
-		printf("Handle '%s' sent successfully! Bytes sent: %d\n", allKeys[i], sent);
+		//printf("Handle '%s' sent successfully! Bytes sent: %d\n", allKeys[i], sent);
 	}
  
 	//send the last flag because the list was done sending
@@ -150,7 +151,7 @@ void forwardLPDU(int socketNum){
         exit(-1);
     }
 
-    printf("Flag 13 (completion) sent successfully! Bytes sent: %d\n", sent);
+    //printf("Flag 13 (completion) sent successfully! Bytes sent: %d\n", sent);
 
 	 return;
 }
@@ -158,14 +159,14 @@ void forwardLPDU(int socketNum){
 
 
 void forwardCPDU(char* curHandle, char destHandles[][HANDLE_MAX], int numDest, char* message, uint8_t* OGBuffer, int OGbufferLen) {
-    printf("FORWARDING MULTICAST MESSAGE...\n");
-    printf("Current Handle: %s\n", curHandle);
-    printf("Message: %s\n", message);
-    printf("Number of Recipients: %d\n", numDest);
+    //printf("FORWARDING MULTICAST MESSAGE...\n");
+   // printf("Current Handle: %s\n", curHandle);
+   // printf("Message: %s\n", message);
+   // printf("Number of Recipients: %d\n", numDest);
 
     for (int i = 0; i < numDest; i++) {
 
-        printf("Sending to: %s\n", destHandles[i]);
+       // printf("Sending to: %s\n", destHandles[i]);
 
         // Call forwardMPDU for each recipient
         forwardMPDU(curHandle, destHandles[i], message, OGBuffer, OGbufferLen);
@@ -175,15 +176,15 @@ void forwardCPDU(char* curHandle, char destHandles[][HANDLE_MAX], int numDest, c
 void forwardMPDU(char* curHandle, char* destHandle, char* message, uint8_t* OGBuffer, int OGbufferLen){
 
 	//JUST DEBUGGING PRINTING
-	printf("FORWARDING MESSAGE...\n");
-    printf("Current Handle: %s\n", curHandle);
-    printf("Destination Handle: %s\n", destHandle);
-    printf("Message: %s\n", message);
+	// printf("FORWARDING MESSAGE...\n");
+    // printf("Current Handle: %s\n", curHandle);
+    // printf("Destination Handle: %s\n", destHandle);
+    // printf("Message: %s\n", message);
 
     for (int i = 0; i < table->cap; i++) {
         Node *current = table->arr[i];
         while (current != NULL) {
-            printf("TABLE ENTRY: Handle: %s, Socket: %d\n", current->key, current->value);
+            //printf("TABLE ENTRY: Handle: %s, Socket: %d\n", current->key, current->value);
             current = current->next;
         }
     }
@@ -191,11 +192,11 @@ void forwardMPDU(char* curHandle, char* destHandle, char* message, uint8_t* OGBu
 	//int messageLength = strlen(message) + 1; //strlen does not include the null terminator
 	int destSocketNum = searchByKey(table, destHandle);
 	int sent = 0;
-	printf("Destination Socket Number (after searchByKey): %d\n", destSocketNum);
+	//printf("Destination Socket Number (after searchByKey): %d\n", destSocketNum);
 
 	//it is within the table
     if (destSocketNum != -1){
-    	printf("Destination found. Sending message to socket: %d\n", destSocketNum);
+    	//printf("Destination found. Sending message to socket: %d\n", destSocketNum);
 
 		int sent = sendPDU(destSocketNum, (uint8_t *)OGBuffer, OGbufferLen);
 
@@ -204,13 +205,13 @@ void forwardMPDU(char* curHandle, char* destHandle, char* message, uint8_t* OGBu
               exit(-1);
           }
 
-		printf("Message successfully sent! Bytes sent: %d\n", sent);
+		//printf("Message successfully sent! Bytes sent: %d\n", sent);
         return;
 	}
 
 	else{
         //want to send back the error flag and the error message to the client
-        printf("Destination handle '%s' not found in table. Sending error response back to sender.\n", destHandle);
+        //printf("Destination handle '%s' not found in table. Sending error response back to sender.\n", destHandle);
 
 		int flag = DNE_FLAG;
         int destHandleLen = strlen(destHandle);
@@ -218,7 +219,7 @@ void forwardMPDU(char* curHandle, char* destHandle, char* message, uint8_t* OGBu
     
         //will give me who to send it back to
         int clientSocket = searchByKey(table, curHandle);
-        printf("SOcket to send it back to: %d\n", clientSocket);
+        //printf("SOcket to send it back to: %d\n", clientSocket);
     
         if (clientSocket == -1) {
                 printf("Error: Could not find socket for sender handle '%s'.\n", curHandle);
@@ -229,12 +230,7 @@ void forwardMPDU(char* curHandle, char* destHandle, char* message, uint8_t* OGBu
         memcpy(errorBuffer + 1, &destHandleLen, 1); //1 byte for how long the handle is
         memcpy(errorBuffer + 2, destHandle, destHandleLen); //then the handle searched for 
     
-        printf("FLAG BEING SENT BACK BECAUSE DESTINATION DOES NOT EXIST: %d\n", flag);
-            printf("Error Buffer Contents (Hex): ");
-            for (int i = 0; i < destHandleLen + 2; i++) {
-                printf("%02X ", errorBuffer[i]);
-            }
-            printf("\n");
+        //printf("FLAG BEING SENT BACK BECAUSE DESTINATION DOES NOT EXIST: %d\n", flag);
     
         sent = sendPDU(clientSocket, errorBuffer, destHandleLen + 2);
     
@@ -242,7 +238,7 @@ void forwardMPDU(char* curHandle, char* destHandle, char* message, uint8_t* OGBu
               perror("send failed\n");
               exit(-1);
           }
-    	printf("Error response successfully sent to sender. Bytes sent: %d\n", sent);
+    	//printf("Error response successfully sent to sender. Bytes sent: %d\n", sent);
     }
 }
 
@@ -265,9 +261,9 @@ void parsePDU(int clientSocket, uint8_t *buffer, int messageLen){
 		uint8_t flag;
 		flag = validateHandle(table, handleName, clientSocket);
 
-		printf("FLAG BEING SENT BACK: %d\n", flag);
+		//printf("FLAG BEING SENT BACK: %d\n", flag);
 		sent = sendPDU(clientSocket, &flag, 1);
-		printf("Sent %d bytes (flag: %d) to client.\n", sent, flag);
+		//printf("Sent %d bytes (flag: %d) to client.\n", sent, flag);
 
 		if (sent < 0){
         	perror("send failed\n");
@@ -277,7 +273,7 @@ void parsePDU(int clientSocket, uint8_t *buffer, int messageLen){
 
 	//[flag][length handle][handle][number destinations][length of target][actual target][message]
 	if (messageTypeFlag == M_FLAG) {
-    	printf("MESSAGE PACKET RECEIVED\n");
+    	//printf("MESSAGE PACKET RECEIVED\n");
 
     	int curBufSpot = 1;
 
@@ -310,9 +306,9 @@ void parsePDU(int clientSocket, uint8_t *buffer, int messageLen){
     	char *messageToPass = (char *)(buffer + curBufSpot); 
 
     	//for testing
-    	printf("PARSED Sender Handle: %s\n", currHandle);
-    	printf("PARSED Destination Handle: %s\n", destHandle);
-    	printf("PARSED Message: %s\n", messageToPass);
+    	// printf("PARSED Sender Handle: %s\n", currHandle);
+    	// printf("PARSED Destination Handle: %s\n", destHandle);
+    	// printf("PARSED Message: %s\n", messageToPass);
 
     	//pass message to the forwarder
     	forwardMPDU(currHandle, destHandle, messageToPass, buffer, messageLen);
@@ -320,7 +316,7 @@ void parsePDU(int clientSocket, uint8_t *buffer, int messageLen){
 
 	if(messageTypeFlag == B_FLAG){
 
-		printf("BROADCAST PACKET RECEIVED\n");
+		//printf("BROADCAST PACKET RECEIVED\n");
 
 		forwardBPDU(clientSocket, buffer, messageLen);
 
@@ -328,7 +324,7 @@ void parsePDU(int clientSocket, uint8_t *buffer, int messageLen){
 	}
 
 	if(messageTypeFlag == C_FLAG){
-		printf("MULTICAST PACKET RECEIVED\n");
+		//printf("MULTICAST PACKET RECEIVED\n");
 
 		int curBufSpot = 1;
 
@@ -348,7 +344,7 @@ void parsePDU(int clientSocket, uint8_t *buffer, int messageLen){
 		//NEW STUFF FOR %C!!
 		//hold the handle names
 		char destHandles[numDest][HANDLE_MAX];
-    	int destSockets[numDest];
+    	//int destSockets[numDest];
 
 		//go through the rest of the buffer, get out each handle, and store it into the array.
 		for (int i = 0; i < numDest; i++) {
@@ -361,18 +357,18 @@ void parsePDU(int clientSocket, uint8_t *buffer, int messageLen){
     		curBufSpot += destLen;
 
 			//look through the table and add that to here as well
-			int socketNumber = searchByKey(table, destHandles[i]);
-			destSockets[i] = socketNumber;
+			//int socketNumber = searchByKey(table, destHandles[i]);
+			//destSockets[i] = socketNumber;
 
 			//DEBUG PRINT
-			printf("Destination %d: %s (Socket: %d)\n", i + 1, destHandles[i], destSockets[i]);
+			//printf("Destination %d: %s (Socket: %d)\n", i + 1, destHandles[i], destSockets[i]);
 		}
 
     	//get the rest of the message
     	char *messageToPass = (char *)(buffer + curBufSpot); 
 
     	//for testing
-    	printf("PARSED Message: %s\n", messageToPass);
+    	//printf("PARSED Message: %s\n", messageToPass);
 
     	//pass message to the forwarder
     	forwardCPDU(currHandle, destHandles, numDest, messageToPass, buffer, messageLen);
@@ -382,7 +378,7 @@ void parsePDU(int clientSocket, uint8_t *buffer, int messageLen){
 
 	if(messageTypeFlag == L_FLAG){
 
-		printf("LIST PACKET RECEIVED\n");
+		//printf("LIST PACKET RECEIVED\n");
 
 		forwardLPDU(clientSocket);
 
@@ -397,7 +393,7 @@ void recvFromClient(int clientSocket)
 	
 	//now get the data from the client_socket
 	messageLen = recvPDU(clientSocket, dataBuffer, MAXBUF);
-	printf("what recvPDu is returning: %d\n", messageLen);
+	//printf("what recvPDu is returning: %d\n", messageLen);
 	if (messageLen < 0) {
 		perror("recv call");
 	}
@@ -406,7 +402,7 @@ void recvFromClient(int clientSocket)
 	{
 		parsePDU(clientSocket, dataBuffer, messageLen);
 		
-		printf("Message received on socket %d, length: %d Data: %s\n", clientSocket, messageLen, dataBuffer);
+		//printf("Message received on socket %d, length: %d Data: %s\n", clientSocket, messageLen, dataBuffer);
 		
 		//! part b of part 8 - uncomment to test that processMsgFromServer works
 
@@ -423,10 +419,10 @@ void recvFromClient(int clientSocket)
 	else if (messageLen == 0)
 	{
 		dctRemoveValue(table, clientSocket);
-		printf("DEBUG - TABLE SIZE AFTER REMOVED: %d\n", table->size);
+		//printf("DEBUG - TABLE SIZE AFTER REMOVED: %d\n", table->size);
 		close(clientSocket);
 		removeFromPollSet(clientSocket);
-		printf("Connection closed by other side\n");
+		//printf("Connection closed by socket.\n");
 	}
 }
 
@@ -437,7 +433,7 @@ int checkArgs(int argc, char *argv[])
 
 	if (argc > 2)
 	{
-		fprintf(stderr, "Usage %s [optional port number]\n", argv[0]);
+		printf("Usage %s [optional port number]\n", argv[0]);
 		exit(-1);
 	}
 	

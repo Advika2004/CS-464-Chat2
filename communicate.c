@@ -38,7 +38,7 @@ int recvPDU(int socketNumber, uint8_t * dataBuffer, int bufferSize){
     //printf("RESULT1 %d\n", result1);
 
     if (result1 <= 0){
-        perror("connection was closed, first receive failed\n");
+        perror("Connection was closed.\n");
         return result1;
     }
 
@@ -49,7 +49,7 @@ int recvPDU(int socketNumber, uint8_t * dataBuffer, int bufferSize){
     int PDUDataLength = ntohs(*(uint16_t *)dataBuffer) - 2;
 
     if (PDULength > bufferSize){
-        perror("buffer not big enough\n");
+        perror("Buffer not big enough\n");
         exit(-1);
     }
 
