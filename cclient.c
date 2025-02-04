@@ -184,18 +184,61 @@ void sendToServer(int socketNum)
 
 	else if(strcasecmp(chunkArray[0], "%M") == 0){
 
-		uint8_t MBuf[MAX_M_PDU_LEN];
-		int MLen = makeMPDU(chunkArray, MBuf);
+		//%M, dest, message
+		char* message = chunkArray[2];
+		int messageLength = strlen(message);
+		int chunksToSend = 0;
 
-		int Msent = sendPDU(socketNum, MBuf, MLen);
-
-		if (Msent < 0)
-		{
-			perror("sendM call");
-			exit(-1);
+		if (messageLength > 199){
+			chunksToSend = (messageLength / 199);
+			if (messageLength % 199 != 0){
+				chunksToSend += 1;
+			}
+		}
+		else {
+			chunksToSend = 1;
 		}
 
-		printf("Sent %d bytes for %%M message.\n", Msent);
+		//have the pointer start pointing at the start of the message
+		
+
+		for (int i = 0; i < chunksToSend; i++){
+
+			char newChunk[200];
+
+			//move the pointer forward by 200 every iteration
+			int twoHunnidOffset = i * 199;
+			int howMuchToCopy = 0;
+			//calculate how much to copy that time
+			if(messageLength - twoHunnidOffset >= 199){
+				howMuchToCopy = 199;
+			}
+			else {
+				howMuchToCopy = messageLength - twoHunnidOffset;
+			}
+			
+			//store that in an new chunk
+			//make that what is in the chunk array
+			memcpy(newChunk, message + twoHunnidOffset, howMuchToCopy);
+			//go to the end and null terminate it
+			newChunk[howMuchToCopy] = '\0';
+			chunkArray[2] = newChunk;
+
+			uint8_t MBuf[MAX_M_PDU_LEN];
+			int MLen = makeMPDU(chunkArray, MBuf);
+
+			int Msent = sendPDU(socketNum, MBuf, MLen);
+
+			if (Msent < 0)
+			{
+				perror("sendM call");
+				exit(-1);
+			}
+
+		printf("Sent %d bytes for %%M message (chunk %d).\n", Msent, i + 1);
+
+		}
+
 	}
 
 	else if(strcasecmp(chunkArray[0], "%C") == 0){
