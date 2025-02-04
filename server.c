@@ -201,8 +201,8 @@ void forwardMPDU(char* curHandle, char* destHandle, char* message, uint8_t* OGBu
         printf("Destination handle '%s' not found in table. Sending error response back to sender.\n", destHandle);
 
 		int flag = DNE_FLAG;
-        int destHandleLen = strlen(destHandle) + 1;
-        uint8_t errorBuffer[1 + destHandleLen];
+        int destHandleLen = strlen(destHandle);
+        uint8_t errorBuffer[2 + destHandleLen];
     
         //will give me who to send it back to
         int clientSocket = searchByKey(table, curHandle);
@@ -224,7 +224,7 @@ void forwardMPDU(char* curHandle, char* destHandle, char* message, uint8_t* OGBu
             }
             printf("\n");
     
-        sent = sendPDU(clientSocket, errorBuffer, destHandleLen + 1);
+        sent = sendPDU(clientSocket, errorBuffer, destHandleLen + 2);
     
         if (sent < 0){
               perror("send failed\n");

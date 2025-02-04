@@ -421,7 +421,10 @@ void processMsgFromServer(int serverSocket)
 
         if (flag == DNE_FLAG) { 
             // the client asked for DNE
-            uint8_t handleLength = buffer[1];               
+            uint8_t handleLength = buffer[1];      
+
+printf("Handle Length Parsed: %d\n", handleLength); 
+        
             char handleName[HANDLE_MAX];    
 
 			// go past the flag and the length (+2)                 
